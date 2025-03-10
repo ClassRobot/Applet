@@ -1,6 +1,6 @@
 <template>
 	<view class="page chat-page">
-		<navbar title="聊天" :leftClick="true"/>
+		<navbar title="聊天" />
 		
 		<!-- 聊天消息列表区域 -->
 		<scroll-view scroll-y class="chat-container" :scroll-top="scrollTop" @scrolltoupper="loadMore">
