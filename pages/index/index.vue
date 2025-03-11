@@ -1,6 +1,13 @@
 <template>
 	<view class="page chat-page">
-		<navbar title="聊天" />
+		<navbar title="言夕" />
+		
+		<!-- 通知栏 -->
+		<NotificationBar>
+            <view>
+                参加家校群调研，大礼等你来拿参加家校群调研，大礼等你来拿
+            </view>
+        </NotificationBar>
 		
 		<!-- 聊天消息列表区域 -->
 		<scroll-view scroll-y class="chat-container" :scroll-top="scrollTop" @scrolltoupper="loadMore">
@@ -18,7 +25,22 @@
 						</view>
 						<!-- 图片消息 -->
 						<view v-else-if="item.type === 'image'" class="message-bubble image-bubble">
-							<image :src="item.content" mode="widthFix" @tap="previewImage(item.content)"></image>
+							<!-- 单图片显示 -->
+							<image v-if="!Array.isArray(item.content)" 
+							:src="item.content" mode="widthFix" 
+							@tap="previewImage([item.content], 0)"></image>
+							
+							<!-- 多图片宫格显示 -->
+							<view v-else class="image-grid" :class="[`image-grid-${item.content.length > 9 ? 9 : item.content.length}`]">
+								<view 
+									v-for="(img, imgIndex) in item.content.slice(0, 9)" 
+									:key="imgIndex" 
+									class="grid-item"
+									@tap="previewImage(item.content, imgIndex)"
+								>
+									<image :src="img" mode="aspectFill"></image>
+								</view>
+							</view>
 						</view>
 					</view>
 				</view>
@@ -45,17 +67,18 @@
 </template>
 
 <script>
-	import { ossUpload, ossUploadImage } from '@/utils/oss-upload/oss/index.js';
+	import NotificationBar from '@/components/notification/NotificationBar.vue';
 	
 	export default {
 		components: {
+			NotificationBar
 		},
 		data() {
 			return {
 				messageList: [
 					{
 						isSelf: false,
-						avatar: '/static/image/tabbar/home.png',
+						avatar: '/static/image/center/1.jpg',
 						type: 'text',
 						content: '你好，我是机器人助手！'
 					},
@@ -92,7 +115,7 @@
 				setTimeout(() => {
 					this.addMessage({
 						isSelf: false,
-						avatar: '/static/image/tabbar/home.png',
+						avatar: '/static/image/center/1.jpg',
 						type: 'text',
 						content: '我收到了你的消息：' + this.messageList[this.messageList.length - 1].content
 					});
@@ -101,35 +124,46 @@
 			
 			// 选择并上传图片
 			chooseImage() {
-				ossUploadImage({
-					compressed: true,
-					success: (url) => {
-						// 添加自己的图片消息
+				
+				this.uploadImage({})
+				.then(urls => {
+					// 检查返回的是单张图片还是多张图片数组
+					// uploadImage返回的是图片路径数组
+					this.addMessage({
+						isSelf: true,
+						avatar: '/static/image/center/avatar.png',
+						type: 'image',
+						content: urls
+					});
+					
+					// 模拟机器人回复
+					setTimeout(() => {
 						this.addMessage({
-							isSelf: true,
-							avatar: '/static/image/center/avatar.png',
-							type: 'image',
-							content: url
+							isSelf: false,
+							avatar: '/static/image/center/1.jpg',
+							type: 'text',
+							content: '我收到了你发送的图片！'
 						});
-						
-						// 模拟机器人回复
-						setTimeout(() => {
-							this.addMessage({
-								isSelf: false,
-								avatar: '/static/image/tabbar/home.png',
-								type: 'text',
-								content: '我收到了你发送的图片！'
-							});
-						}, 500);
-					},
-					fail: (err) => {
-						console.error('图片上传失败', err);
-						uni.showToast({
-							title: '图片上传失败',
-							icon: 'none'
-						});
-					}
-				});
+					}, 500);
+				})
+				
+			},
+			// 图片上传
+			uploadImage({
+				compressed = true,
+			}){
+				return new Promise((success, error) => {
+					const sizeType = [compressed ? 'compressed' : 'original']
+					uni.chooseImage({
+						count: 9,
+						sizeType,
+						success(res) {
+							// 直接返回图片路径数组，而不是拼接成字符串
+							success(res.tempFilePaths.length == 1 ? res.tempFilePaths[0] : res.tempFilePaths)
+						},
+						fail : error,
+					})
+				})
 			},
 			
 			// 添加消息到列表
@@ -144,7 +178,7 @@
 			// 滚动到底部
 			scrollToBottom() {
 				// 使用一个很大的值确保滚动到底部
-				this.scrollTop = this.scrollTop === 9999 ? 10000 : 9999;
+				this.scrollTop = this.scrollTop === 999999999 ? 100000000 : 999999999;
 			},
 			
 			// 加载更多历史消息
@@ -154,12 +188,12 @@
 			},
 			
 			// 预览图片
-			previewImage(url) {
+			previewImage(urls, current) {
 				uni.previewImage({
-					urls: [url],
-					current: url
+					urls: urls,
+					current
 				});
-			}
+			},
 		},
 		// 页面加载完成后滚动到底部
 		onReady() {
@@ -182,6 +216,7 @@
 	flex: 1;
 	padding: 20rpx;
 	overflow: hidden;
+    box-sizing: border-box;
 }
 
 .chat-list {
@@ -236,12 +271,62 @@
 
 .image-bubble {
 	padding: 0;
-	background-color: transparent;
+	background: transparent !important;
 	box-shadow: none;
 	
 	image {
 		max-width: 400rpx;
 		border-radius: 10rpx;
+	}
+	
+	.image-grid {
+		display: flex;
+		flex-wrap: wrap;
+		width: 400rpx;
+		
+		&-1 {
+			.grid-item {
+				width: 400rpx;
+				height: 400rpx;
+			}
+		}
+		
+		&-2, &-4 {
+			.grid-item {
+				width: 195rpx;
+				height: 195rpx;
+				margin-right: 10rpx;
+				margin-bottom: 10rpx;
+				
+				&:nth-child(2n) {
+					margin-right: 0;
+				}
+			}
+		}
+		
+		&-3, &-5, &-6, &-7, &-8, &-9 {
+			.grid-item {
+				width: 126rpx;
+				height: 126rpx;
+				margin-right: 10rpx;
+				margin-bottom: 10rpx;
+				
+				&:nth-child(3n) {
+					margin-right: 0;
+				}
+			}
+		}
+	}
+	
+	.grid-item {
+		overflow: hidden;
+		border-radius: 8rpx;
+		
+		image {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+		}
 	}
 }
 
