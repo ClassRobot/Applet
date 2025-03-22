@@ -13,10 +13,12 @@ const type = 'dev'
 // 环境配置
 const config = {
 	dev : {
-		baseUrl : 'http://www.gcosc.fun:82',
+		baseUrl : 'http://127.0.0.1:8080',
+		socketUrl : 'ws://127.0.0.1:8080/onebot',
 	},
 	prod : {
 		baseUrl : 'http://xxx.xxx.xxx/xxx',
+		socketUrl : 'http://127.0.0.1:8080',
 	}
 }
 
@@ -24,6 +26,8 @@ const config = {
 // 默认配置
 const defaultConfig = {
 	mapKey : '',
+	clientid : 'd2595ef506e20b1f727ded83b46a41c5',
+	appid : 'wxe7ae8cbe1673834c',
 	aliOss: {
 		url: '',
 		config: {

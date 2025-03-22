@@ -14,6 +14,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "crypto-js": "4.2.0",
+    "jsencrypt": "3.3.2",
     "ali-oss": "^6.21.0",
     "dayjs": "^1.11.12"
   }

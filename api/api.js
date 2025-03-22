@@ -71,7 +71,8 @@ export function api(key, data, callback, loadingTitle) {
 	}
 
 	return http.http(req.url, data, callback, req.method,
-		loadingTitle || req.showLoading, loadingTitle || req.loadingTitle)
+		loadingTitle || req.showLoading, loadingTitle || req.loadingTitle
+		, req)
 }
 
 

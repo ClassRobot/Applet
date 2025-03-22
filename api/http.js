@@ -1,16 +1,19 @@
 
 import Vue from 'vue'
 import utils from '../utils/utils.js'
-import store from '../store/store.js'
+import crypto from '../utils/encrypt/crypto'
+import jsencrypt from '../utils/encrypt/jsencrypt.js'
 
-function http(uri, data, callback, method = 'GET', showLoading, title) {
+const encryptHeader = 'encrypt-key';
+
+
+function http(uri, data, callback, method = 'GET', showLoading, title, req) {
 	
 	if(showLoading){
 		uni.showLoading({
 		    title: title || '加载中...'
 		});
 	}
-	
 	let reject, resolve;
 	
 	let promise = new Promise((res, rej) => {
@@ -18,34 +21,42 @@ function http(uri, data, callback, method = 'GET', showLoading, title) {
 		resolve = res
 	})
 	
+	let header = {
+		'X-Access-Token': uni.getStorageSync('token'),
+		'Content-Type' : 'application/json',
+		clientid : Vue.prototype.$config.clientid,
+	}
+	
+	if(req.encrypt){
+		const aesKey = crypto.generateAesKey();
+		header[encryptHeader] = jsencrypt.encrypt(crypto.encryptBase64(aesKey));
+		data = typeof data === 'object' ? 
+		crypto.encryptWithAes(JSON.stringify(data), aesKey) 
+		: crypto.encryptWithAes(data, aesKey);
+	}
+	
 	uni.request({
 		url: Vue.prototype.$config.baseUrl + uri,
 		data,
-		method: method,
-		header: {
-			'X-Access-Token': uni.getStorageSync('token'),
-			'Content-Type' : 'application/x-www-form-urlencoded'
-		},
+		method,
+		header,
 		success: (res) => {
-			// console.log(res,'res')
+			
 			if(showLoading){
 				uni.hideLoading();
 			}
 			
-			if(res.statusCode == 401 || 
-			res.data.message == '操作失败，token非法无效!' || 
-			res.data.message == '操作失败，用户不存在!'){
-				store.commit('logout')
+			if(res.statusCode == 401){
+				uni.removeStorageSync('token')
 				console.error('登录过期');
 				utils.toLogin()
 			}
 			
-			if(res.statusCode == 200 && res.data.code != 200
-			&& res.data.code != 902){
+			if(res.statusCode == 200 && res.data.code != 200){
 				uni.showToast({
 					mask: true,
 					duration: 1000,
-					title: res.data.message,
+					title: res.data.msg,
 					icon:'none'
 				});
 			}
@@ -54,13 +65,13 @@ function http(uri, data, callback, method = 'GET', showLoading, title) {
 			resolve(res.data)
 		},
 		
-		fail: () => {
-			reject('api fail')
+		fail: err => {
+			reject()
 			uni.showLoading({})
-			setTimeout(()=>{
-				uni.hideLoading()
-				uni.showToast({icon:"none", title:"网络异常"})
-			}, 3000)
+			
+			console.log(err);
+			
+			uni.showToast({icon:"none", title:"网络异常"})
 			
 			if(showLoading){
 				uni.hideLoading();
@@ -70,7 +81,6 @@ function http(uri, data, callback, method = 'GET', showLoading, title) {
 	
 	return promise
 }
-
 
 export default {
 	http: http,

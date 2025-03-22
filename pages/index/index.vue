@@ -62,16 +62,19 @@
 			</view>
 		</view>
 		
+		<loginPopup ref="loginPopup" @login=""/>
+		
 		<PrivacyAgreementPoup/>
 	</view>
 </template>
 
 <script>
 	import NotificationBar from '@/components/notification/NotificationBar.vue';
-	
+	import loginPopup from '@/components/config/loginPopup.vue'
 	export default {
 		components: {
-			NotificationBar
+			NotificationBar,
+			loginPopup,
 		},
 		data() {
 			return {
@@ -94,6 +97,13 @@
 			}
 		},
 		computed: {
+		},
+		onLoad() {
+			if(uni.getStorageSync('token')){
+				this.$store.commit('initSocket')
+			}else{
+				this.$refs.loginPopup.open()
+			}
 		},
 		methods: {
 			// 发送文本消息
