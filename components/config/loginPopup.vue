@@ -5,9 +5,12 @@
         :closeable="false" 
         :maskClick="false"
 		:safeAreaInsetBottom="false"
-        :closeOnClickOverlay="false"
+        
         :customStyle="{backgroundColor: '#fff', padding: 0}"
         overlayOpacity="0.8">
+		
+		<!-- :closeOnClickOverlay="false" -->
+		
         <view class="login-card">
             <view class="login-title">登录后即可体验完整服务</view>
             <view class="login-content">
