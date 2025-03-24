@@ -20,7 +20,7 @@ export default {
 				console.error('未找到token，无法建立WebSocket连接');
 				return;
 			}
-			
+		
 			// 关闭已存在的连接
 			if (state.socket && state.socket.readyState === 1) {
 				uni.closeSocket();

@@ -10,6 +10,9 @@
     "type": "git",
     "url": "https://gitee.com/huliyong/uniapp-project-templates.git"
   },
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
   "keywords": [],
   "author": "",
   "license": "ISC",
