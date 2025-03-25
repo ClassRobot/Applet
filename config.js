@@ -27,7 +27,7 @@ const config = {
 const defaultConfig = {
 	mapKey : '',
 	clientid : 'd2595ef506e20b1f727ded83b46a41c5',
-	appid : 'wxe7ae8cbe1673834c',
+	appid : 'wx49a4c88028354ce0',
 	aliOss: {
 		url: '',
 		config: {

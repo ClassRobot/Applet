@@ -22,7 +22,7 @@ function http(uri, data, callback, method = 'GET', showLoading, title, req) {
 	})
 	
 	let header = {
-		'X-Access-Token': uni.getStorageSync('token'),
+		'Authorization' : 'Bearer ' + uni.getStorageSync('token'),
 		'Content-Type' : 'application/json',
 		clientid : Vue.prototype.$config.clientid,
 	}
