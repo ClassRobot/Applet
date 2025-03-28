@@ -31,6 +31,10 @@ export default {
 		}
 	},
 	created() {
+		uni.$on('logout', this.open)
+	},
+	beforeDestroy() {
+		uni.$off('logout', this.open)
 	},
     methods: {
         open(){
@@ -69,10 +73,13 @@ export default {
             			if (res.code != 200) {
             				return
             			}
+						
+						this.$store.commit('setUserInfo', res.data.userInfo)
             
             			uni.setStorageSync('token', res.data.access_token)
 						this.close()
 						this.$emit('login')
+						this.$store.commit("initSocket");
             		})
             	}
             })

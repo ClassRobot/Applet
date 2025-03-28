@@ -5,7 +5,7 @@ import utils from '../utils/utils.js'
 let limit = {}
 let debounce = {}
 
-const models = ['login', 'index', 'vip', 'info']
+const models = ['login', 'message']
 
 const config = {
 }

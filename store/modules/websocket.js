@@ -58,6 +58,8 @@ export default {
 			uni.onSocketError((res) => {
 				console.error('WebSocket连接错误', res);
 				state.socketConnected = false;
+				
+				this.commit('logout')
 			});
 			
 			// 监听WebSocket关闭
@@ -77,8 +79,13 @@ export default {
 			uni.onSocketMessage((res) => {
 				try {
 					const data = JSON.parse(res.data);
-					console.log('收到WebSocket消息', data);
 					// 处理消息...
+					if(data.type == 'heartbeat'){
+						return
+					}else if(data.detailType == 'private'){
+						uni.$emit('sendMessage:detailType:private', data)
+					}
+					console.log('收到WebSocket消息', data);
 				} catch (error) {
 					console.error('解析WebSocket消息失败', error);
 				}
@@ -114,31 +121,6 @@ export default {
 		}
 	},
 	actions: {
-		// 处理WebSocket消息
-		handleSocketMessage({ commit, state }, res) {
-			try {
-				const data = JSON.parse(res.data);
-				console.log('收到WebSocket消息', data);
-				// 处理不同类型的消息...
-			} catch (error) {
-				console.error('解析WebSocket消息失败', error);
-			}
-		},
-		
-		// 处理WebSocket关闭
-		handleSocketClose({ commit, state, dispatch }) {
-			commit('setSocketConnected', false);
-			commit('clearHeartbeatTimer');
-			// 尝试重连
-			dispatch('tryReconnect');
-		},
-		
-		// 处理WebSocket错误
-		handleSocketError({ commit, state, dispatch }) {
-			commit('setSocketConnected', false);
-			// 尝试重连
-			dispatch('tryReconnect');
-		},
 		
 		// 尝试重连
 		tryReconnect({ commit, state, dispatch }) {

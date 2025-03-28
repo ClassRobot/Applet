@@ -13,8 +13,8 @@ const type = 'dev'
 // 环境配置
 const config = {
 	dev : {
-		baseUrl : 'http://127.0.0.1:8080',
-		socketUrl : 'ws://127.0.0.1:8080/onebot',
+		baseUrl : 'http://127.0.0.1:8006',
+		socketUrl : 'ws://127.0.0.1:8006/onebot',
 	},
 	prod : {
 		baseUrl : 'http://xxx.xxx.xxx/xxx',
