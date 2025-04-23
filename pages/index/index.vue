@@ -78,6 +78,11 @@
 				scrollTop: 0,
 				isMenuVisible: false,
 				selectedImages: [],
+				queryParams : {
+					pageNum: 1,
+					pageSize: 10,
+				},
+				total : 0,
 			};
 		},
 		computed: {},
@@ -85,9 +90,13 @@
 			uni.$off('sendMessage:detailType:private', this.handledrMessage)
 		},
 		onLoad() {
+			this.queryParams.pageNum = 1
+			
 			if (uni.getStorageSync("token")) {
 				this.$store.commit("initSocket");
-				this.$store.commit('getUserInfo')
+				this.$store.commit('getUserInfo', () => {
+					this.getMessageList()
+				})
 			} else {
 				this.$refs.loginPopup.open();
 			}
@@ -225,40 +234,30 @@
 				// 2. 将获取到的消息添加到 messageList 数组的前面
 				// 3. 可以根据需要更新一些状态，如是否还有更多消息等
 				console.log("加载更多历史消息");
-				// 示例代码：
-				// uni.request({
-				//   url: 'your-api-url',
-				//   data: {
-				//     // 传递必要的参数，如当前消息的起始位置等
-				//     start: this.messageList.length
-				//   },
-				//   success: (res) => {
-				//     if (res.data.length > 0) {
-				//       this.messageList = res.data.concat(this.messageList);
-				//     } else {
-				//       uni.showToast({
-				//         title: '没有更多历史消息了',
-				//         icon: 'none'
-				//       });
-				//     }
-				//   },
-				//   fail: (err) => {
-				//     console.error('加载历史消息失败', err);
-				//   }
-				// });
+				
+				if(this.queryParams.pageNum * this.queryParams.pageSize > this.total){
+					return
+				}
+				
+				this.queryParams.pageNum++
+				
+				this.getMessageList()
+				
 			},
-
-			// 预览图片
-			/**
-			 * 预览图片
-			 * @param {string[]} urls - 图片的 URL 数组
-			 * @param {string} current - 当前预览的图片 URL
-			 */
-			previewImage(urls, current) {
-				uni.previewImage({
-					urls: urls,
-					current,
-				});
+			getMessageList(){
+				this.$api('getMessage', this.queryParams)
+				.then(res => {
+					if(res.code == 200){
+						
+						res.rows.forEach(messgae => {
+							messgae.data = JSON.parse(messgae.data)
+							messgae.isSelf = messgae.userId == this.userInfo.userId
+							this.messageList.unshift(messgae)
+						})
+						
+						this.total = res.total
+					}
+				})
 			},
 
 			// 页面加载完成后滚动到底部

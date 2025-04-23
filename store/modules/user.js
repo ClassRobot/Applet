@@ -11,10 +11,11 @@ export default {
 		setUserInfo(state, userInfo) {
 			state.userInfo = userInfo
 		},
-		getUserInfo(state) {
+		getUserInfo(state, fn) {
 			api('getUserInfo').then(res => {
 				if(res.code == 200) {
 					state.userInfo = res.data
+					fn && fn(state)
 				}
 			})
 		},

@@ -7,7 +7,12 @@ const api = {
 		method: "POST",
 		limit: 500,
 		showLoading: true,
-		encrypt: true,
+	},
+	// 查询聊天记录
+	getMessage: {
+		url: "/api/ai/chat/getMessage",
+		method: "GET",
+		showLoading: true,
 	},
 };
 

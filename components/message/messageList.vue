@@ -20,11 +20,11 @@
 					<!-- 图片消息 -->
 					<view v-else-if="item.type == 'image'" class="message-bubble image-bubble">
 						<!-- 单图片显示 -->
-						<image v-if="!Array.isArray(item.content)" :src="item.content" mode="widthFix"
-							@tap="previewImage([item.content], 0)"></image>
+						<image v-if="!Array.isArray(item.data.file_url)" :src="item.data.file_url" mode="widthFix"
+							@tap="previewImage([item.data.file_url], 0)"></image>
 					
 						<!-- 多图片宫格显示 -->
-						<view v-else class="image-grid" :class="[
+						<!-- <view v-else class="image-grid" :class="[
 						  `image-grid-${
 							item.content.length > 9 ? 9 : item.content.length
 						  }`,
@@ -33,7 +33,7 @@
 								class="grid-item" @tap="previewImage(item.content, imgIndex)">
 								<image :src="img" mode="aspectFill"></image>
 							</view>
-						</view>
+						</view> -->
 					</view>
 				</view>
 				
@@ -55,6 +55,19 @@
 			}
 		},
 		methods: {
+
+			// 预览图片
+			/**
+			 * 预览图片
+			 * @param {string[]} urls - 图片的 URL 数组
+			 * @param {string} current - 当前预览的图片 URL
+			 */
+			previewImage(urls, current) {
+				uni.previewImage({
+					urls: urls,
+					current,
+				});
+			},
 			
 		}
 	}
