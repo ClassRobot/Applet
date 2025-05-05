@@ -1,5 +1,6 @@
 import http from './http.js'
 import utils from '../utils/utils.js'
+import Vue from 'vue'
 
 
 let limit = {}
@@ -41,8 +42,11 @@ export function api(key, data, callback, loadingTitle) {
 	//必须登录
 	if (req.auth) {
 		if (!uni.getStorageSync('token')) {
-			utils.toLogin()
-			console.error('需要登录', req.url)
+			// utils.toLogin()
+			// console.error('需要登录', req.url)
+
+            Vue.prototype.$store.commit('login')
+
 			return Promise.reject()
 		}
 	}

@@ -4,6 +4,7 @@
 		<view class="command-suggestions" v-if="showSuggestions">
 			<scroll-view scroll-x class="suggestions-scroll">
 				<view class="suggestion-item" v-for="(item, index) in commandSuggestions" :key="index" @tap="useCommandSuggestion(item)">
+					<uv-icon :name="item.icon || 'chat-dots-fill'" size="32rpx" color="#2797ff" class="suggestion-icon"></uv-icon>
 					<text>{{item.text}}</text>
 				</view>
 			</scroll-view>
@@ -53,8 +54,13 @@
 			<!-- 命令提示区域 -->
 			<view class="command-prompt" v-if="inputMessage.startsWith('/') && filteredCommands.length > 0">
 				<view class="command-item" v-for="(cmd, idx) in filteredCommands" :key="idx" @tap="selectCommand(cmd)">
-					<text class="command-name">/{{cmd.name}}</text>
-					<text class="command-desc">{{cmd.description}}</text>
+					<view class="command-icon-container">
+						<uv-icon :name="cmd.icon || 'circle'" size="38rpx" color="#2797ff" class="command-icon"></uv-icon>
+					</view>
+					<view class="command-text">
+						<text class="command-name">/{{cmd.name}}</text>
+						<text class="command-desc">{{cmd.description}}</text>
+					</view>
 				</view>
 			</view>
 			
@@ -163,22 +169,22 @@
 				isMenuVisible: false,
 				showSuggestions: true,
 				commandSuggestions: [
-					{ text: '介绍一下你自己' },
-					{ text: '写一篇文章' },
-					{ text: '帮我分析这段代码' },
-					{ text: '用Python写一个简单的爬虫' },
-					{ text: '帮我优化这段文字' },
-					{ text: '讲个笑话' },
-					{ text: '写一首诗' }
+					{ text: '介绍一下你自己', icon: 'person-fill' },
+					{ text: '写一篇文章', icon: 'file-text-fill' },
+					{ text: '帮我分析这段代码', icon: 'code-slash' },
+					{ text: '用Python写一个简单的爬虫', icon: 'code-square' },
+					{ text: '帮我优化这段文字', icon: 'magic' },
+					{ text: '讲个笑话', icon: 'emoji-smile-fill' },
+					{ text: '写一首诗', icon: 'book-fill' }
 				],
 				commands: [
-					{ name: 'clear', description: '清空对话历史' },
-					{ name: 'regen', description: '重新生成上一条回复' },
-					{ name: 'help', description: '显示所有命令' },
-					{ name: 'mode', description: '切换AI模式' },
-					{ name: 'image', description: '生成图片模式' },
-					{ name: 'search', description: '搜索相关信息' },
-					{ name: 'new', description: '开始新对话' }
+					{ name: 'clear', description: '清空对话历史', icon: 'trash-fill' },
+					{ name: 'regen', description: '重新生成上一条回复', icon: 'reload' },
+					{ name: 'help', description: '显示所有命令', icon: 'question-circle-fill' },
+					{ name: 'mode', description: '切换AI模式', icon: 'gear-fill' },
+					{ name: 'image', description: '生成图片模式', icon: 'image-fill' },
+					{ name: 'search', description: '搜索相关信息', icon: 'search' },
+					{ name: 'new', description: '开始新对话', icon: 'file-earmark-plus-fill' }
 				],
 				filteredCommands: [],
 				previewItems: [] // 存储待发送的复合消息项
@@ -380,6 +386,14 @@
 						cmd.name.toLowerCase().includes(query) || 
 						cmd.description.toLowerCase().includes(query)
 					);
+					
+					// 为每个过滤的命令添加正确的图标
+					this.filteredCommands.forEach(cmd => {
+						// 确保每个命令都有图标
+						if (!cmd.icon) {
+							cmd.icon = 'circle'; // 默认图标
+						}
+					});
 				} else {
 					this.filteredCommands = [];
 				}
@@ -416,7 +430,7 @@
 						this.inputMessage = '';
 						break;
 					case 'help':
-						this.$emit('help');
+						this.$emit('help', command.icon);
 						this.inputMessage = '';
 						break;
 					case 'new':
@@ -602,7 +616,8 @@
 			overflow-x: auto;
 			
 			.suggestion-item {
-				display: inline-block;
+				display: inline-flex;
+				align-items: center;
 				padding: 12rpx 24rpx;
 				margin-right: 16rpx;
 				border: 1px solid #e6e6e6;
@@ -612,6 +627,10 @@
 				
 				&:active {
 					background-color: #f0f0f0;
+				}
+				
+				.suggestion-icon {
+					margin-right: 6rpx;
 				}
 				
 				text {
@@ -757,7 +776,8 @@
 		
 		.command-item {
 			display: flex;
-			flex-direction: column;
+			flex-direction: row;
+			align-items: center;
 			padding: 16rpx;
 			border-bottom: 1px solid #f0f0f0;
 			transition: all 0.2s ease;
@@ -770,16 +790,33 @@
 				border-bottom: none;
 			}
 			
-			.command-name {
-				font-size: 28rpx;
-				font-weight: bold;
-				color: #2797ff;
+			.command-icon-container {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				width: 60rpx;
+				height: 60rpx;
+				border-radius: 12rpx;
+				background-color: rgba(39, 151, 255, 0.1);
+				margin-right: 20rpx;
 			}
 			
-			.command-desc {
-				font-size: 24rpx;
-				color: #666;
-				margin-top: 4rpx;
+			.command-text {
+				display: flex;
+				flex-direction: column;
+				flex: 1;
+				
+				.command-name {
+					font-size: 28rpx;
+					font-weight: bold;
+					color: #2797ff;
+					margin-bottom: 4rpx;
+				}
+				
+				.command-desc {
+					font-size: 24rpx;
+					color: #666;
+				}
 			}
 		}
 	}

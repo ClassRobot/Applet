@@ -12,7 +12,6 @@ const api = {
 	getMessage: {
 		url: "/api/ai/chat/getMessage",
 		method: "GET",
-		showLoading: true,
 	},
 };
 

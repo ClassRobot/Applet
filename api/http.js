@@ -46,10 +46,12 @@ function http(uri, data, callback, method = 'GET', showLoading, title, req) {
 				uni.hideLoading();
 			}
 			
-			if(res.statusCode == 401){
+			if(res.statusCode == 401 || res.data.code == 401){
 				uni.removeStorageSync('token')
-				console.error('登录过期');
-				utils.toLogin()
+				// console.error('登录过期');
+				// utils.toLogin()
+                Vue.prototype.$store.commit('login')
+                return Promise.reject()
 			}
 			
 			if(res.statusCode == 200 && res.data.code != 200){

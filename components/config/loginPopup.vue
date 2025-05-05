@@ -46,42 +46,9 @@ export default {
         
         // 处理登录
         handleLogin() {
-            uni.showLoading({
-            	title: '登录中...'
-            })
-            uni.login({
-            	success : (res) => {
-            		if (res.errMsg != "login:ok") {
-            			return
-            		}
-            
-            		let data = {
-            			xcxCode: res.code,
-						appid : Vue.prototype.$config.appid,
-						clientId : Vue.prototype.$config.clientid,
-						grantType : 'xcx',
-            		}
-					
-            		if (uni.getStorageSync('shareId')) {
-            			data.shareId = uni.getStorageSync('shareId')
-            		}
-            
-            		this.$api('wxLogin', data, res => {
-            
-            			uni.hideLoading()
-            
-            			if (res.code != 200) {
-            				return
-            			}
-						
-						this.$store.commit('setUserInfo', res.data.userInfo)
-            
-            			uni.setStorageSync('token', res.data.access_token)
-						this.close()
-						this.$emit('login')
-						this.$store.commit("initSocket");
-            		})
-            	}
+            this.$store.commit('login', (state) => {
+                this.close()
+                this.$emit('login')
             })
         },
     }
