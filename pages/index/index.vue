@@ -3,53 +3,33 @@
 		<navbar title="言夕Ai" />
 
 		<!-- 通知栏 -->
-		<NotificationBar>
+		<!-- <NotificationBar>
 			<view> 参加家校群调研，大礼等你来拿参加家校群调研，大礼等你来拿 </view>
-		</NotificationBar>
-		<!-- 聊天消息列表区域 -->
+		</NotificationBar> -->
 		
-		<scroll-view scroll-y class="chat-container" :scroll-top="scrollTop" @scrolltoupper="loadMore">
+		<!-- 聊天消息列表区域 -->
+		<scroll-view 
+			scroll-y 
+			class="chat-container" 
+			:scroll-top="scrollTop" 
+			@scrolltoupper="loadMore"
+			scroll-anchoring
+			:scroll-into-view="scrollIntoViewId"
+		>
 			<messageList :messageList="messageList" />
+			<view id="message-bottom" style="height: 2rpx;"></view>
 		</scroll-view>
 
 		<!-- 底部输入区域 -->
-		<view class="chat-footer">
-			<view class="input-box">
-				<input type="text" v-model="inputMessage" placeholder="请输入消息..." confirm-type="send"
-					@confirm="sendMessage" />
-				<!-- 发送按钮 -->
-				<view class="action-buttons">
-					<view class="send-btn" @tap="sendMessage">
-						<text>发送</text>
-					</view>
-
-					<!-- 更多按钮 -->
-					<view class="more-btn" @click="toggleMenu">
-						<text>+</text>
-					</view>
-					<!-- 底部弹出菜单 -->
-					<view class="bottom-menu" v-if="isMenuVisible">
-						<!-- 菜单内容 -->
-						<view class="up-item">
-							<!-- 收起菜单栏 -->
-							<text @click="UntoggleMenu">收起</text>
-						</view>
-						<!-- 上传图片按钮 -->
-						<view class="menu-item" @tap="chooseImage">
-							<uv-icon name="photo" size="60rpx" color="#666"></uv-icon>
-						</view>
-						<!-- 上传文件按钮 -->
-						<view class="menu-item" @tap="chooseFile">
-							<uv-icon name="file-text" size="60rpx" color="#666"></uv-icon>
-						</view>
-						<!-- 导航功能按钮 -->
-						<view class="menu-item" @tap="chooseFile">
-							<uv-icon name="map" size="60rpx" color="#666"></uv-icon>
-						</view>
-					</view>
-				</view>
-			</view>
-		</view>
+		<chatInputBox 
+			:canRegenerate="canRegenerate" 
+			:isGenerating="isGenerating"
+			@send="handleSendMessage"
+			@regenerate="regenerateLastResponse"
+			@clear="clearChat"
+			@help="showHelp"
+			@new="startNewConversation"
+		/>
 
 		<loginPopup ref="loginPopup" @login="" />
 
@@ -60,35 +40,36 @@
 <script>
 	import NotificationBar from "@/components/notification/NotificationBar.vue";
 	import loginPopup from "@/components/config/loginPopup.vue";
-	import messageList from '@/components/message/messageList.vue'
-	//import listmx from "@/mixins/list.js";
+	import messageList from '@/components/message/messageList.vue';
+	import chatInputBox from '@/components/message/chatInputBox.vue';
+	
 	export default {
 		components: {
 			NotificationBar,
 			loginPopup,
 			messageList,
+			chatInputBox
 		},
 
-		// mixins: [listmx],
 		data() {
 			return {
-				// mixinsListApi: "getxxx",
 				messageList: [],
-				inputMessage: "",
 				scrollTop: 0,
-				isMenuVisible: false,
-				selectedImages: [],
-				queryParams : {
+				scrollIntoViewId: '',
+				queryParams: {
 					pageNum: 1,
-					pageSize: 10,
+					pageSize: 100,
 				},
-				total : 0,
+				total: 0,
+				canRegenerate: false,
+				isGenerating: false,
 			};
 		},
-		computed: {},
+		
 		beforeDestroy() {
 			uni.$off('sendMessage:detailType:private', this.handledrMessage)
 		},
+		
 		onLoad() {
 			this.queryParams.pageNum = 1
 			
@@ -103,6 +84,7 @@
 
 			uni.$on('sendMessage:detailType:private', this.handledrMessage)
 		},
+		
 		methods: {
 			// 处理接收到的聊天信息
 			handledrMessage(messgae) {
@@ -117,122 +99,50 @@
 					this.scrollToBottom();
 				});
 			},
-			//打开菜单栏
-			toggleMenu() {
-				this.isMenuVisible = !this.isMenuVisible;
-			},
 
-			// 收起菜单栏
-			UntoggleMenu() {
-				this.isMenuVisible = false;
-			},
-			//判断图片是否存在
-			hasImages() {
-				return this.selectedImages.length > 0;
-			},
+			// 处理发送消息
+			handleSendMessage(messages) {
+				if (!messages || messages.length === 0) return;
+				
+				// 创建用户消息并直接添加到列表
+				const userMessage = {
+					id: Date.now(),
+					isSelf: true,
+					data: JSON.parse(JSON.stringify(messages))
+				};
+				
+				
+				
+				// 启用重新生成
+				this.canRegenerate = true;
+				this.isGenerating = true;
 
-			chooseImage() {
-				this.uploadImage({}).then((urls) => {
-					this.selectedImages = urls;
-					this.UntoggleMenu();
-				});
-			},
-
-			chooseFile() {
-				// 处理选择文件的逻辑
-				console.log("选择文件");
-			},
-
-			// 发送文本消息
-			sendMessage() {
-				if (!this.inputMessage.trim()) return;
-
-				let messages = []
-
-				messages.push({
-					type: 'text',
-					data: {
-						text: this.inputMessage
-					}
-				})
-
+				// 发送到API
 				this.$api('sendPrivateMessage', {
 					messages
-				})
-
-				// 清空输入框
-				this.inputMessage = "";
-
-			},
-
-			// 图片上传
-			/**
-			 * 选择图片并返回所选图片的临时文件路径
-			 * @param {Object} options - 上传图片的配置选项
-			 * @param {boolean} options.compressed - 是否对图片进行压缩，默认为 true
-			 * @returns {Promise<string|string[]>} - 当选择一张图片时返回图片路径字符串，选择多张图片时返回图片路径数组
-			 */
-			uploadImage({
-				compressed = true
-			}) {
-				return new Promise((success, error) => {
-					// 根据 compressed 参数决定图片选择时的尺寸类型
-					const sizeType = [compressed ? "compressed" : "original"];
-
-					uni.chooseImage({
-						count: 9, // 最多可选择 9 张图片
-						sizeType,
-						success(res) {
-							// 直接返回图片路径数组，而不是拼接成字符串
-							// 如果输入框为空，则提示输入内容，可以选择不输入直接发送图片
-							// 这里可以添加输入框判断逻辑，例如：
-
-							// 选择成功后，根据选择图片的数量返回不同格式的数据
-							success(
-								res.tempFilePaths.length == 1 ?
-								res.tempFilePaths[0] :
-								res.tempFilePaths
-							);
-						},
-						fail: error,
-					});
-				});
-			},
-
-			// 添加消息到列表
-			/**
-			 * 将消息添加到消息列表中，并滚动到列表底部
-			 * @param {any} message - 要添加的消息内容
-			 */
-			addMessage(message) {
-				this.messageList.push(message);
-				// 滚动到底部
-				this.$nextTick(() => {
-					// 等待 DOM 更新完成后执行滚动操作
-					this.scrollToBottom();
+				}).then(response => {
+					this.isGenerating = false;
+				}).catch(error => {
+					this.isGenerating = false;
 				});
 			},
 
 			// 滚动到底部
-			/**
-			 * 滚动消息列表到底部
-			 */
 			scrollToBottom() {
-				// 使用一个很大的值确保滚动到底部
-				// 这里使用一个简单的逻辑来交替设置一个很大的值，以触发滚动
+				// 方法1：使用scrollTop
 				this.scrollTop = this.scrollTop === 999999999 ? 100000000 : 999999999;
+				
+				// 方法2：使用scroll-into-view
+				this.scrollIntoViewId = 'message-bottom';
+				
+				// 确保在下一帧再次尝试滚动
+				setTimeout(() => {
+					this.scrollTop = this.scrollTop === 999999999 ? 100000000 : 999999999;
+				}, 50);
 			},
 
 			// 加载更多历史消息
-			/**
-			 * 加载更多历史消息的逻辑
-			 */
 			loadMore() {
-				// 这里可以实现加载更多历史消息的逻辑
-				// 示例逻辑：
-				// 1. 发送请求到后端获取更多历史消息
-				// 2. 将获取到的消息添加到 messageList 数组的前面
-				// 3. 可以根据需要更新一些状态，如是否还有更多消息等
 				console.log("加载更多历史消息");
 				
 				if(this.queryParams.pageNum * this.queryParams.pageSize > this.total){
@@ -242,8 +152,8 @@
 				this.queryParams.pageNum++
 				
 				this.getMessageList()
-				
 			},
+			
 			getMessageList(){
 				this.$api('getMessage', this.queryParams)
 				.then(res => {
@@ -256,20 +166,134 @@
 						})
 						
 						this.total = res.total
+                        
+                        // 滚动到底部
+                        this.$nextTick(() => {
+                            // 等待 DOM 更新完成后执行滚动操作
+                            this.scrollToBottom();
+                        });
 					}
 				})
 			},
 
 			// 页面加载完成后滚动到底部
-			/**
-			 * 页面初次渲染完成后执行的生命周期钩子，用于滚动消息列表到底部
-			 */
 			onReady() {
 				this.$nextTick(() => {
-					// 等待 DOM 更新完成后执行滚动操作
 					this.scrollToBottom();
 				});
 			},
+
+			regenerateLastResponse() {
+				if (this.isGenerating) return;
+				
+				this.isGenerating = true;
+				
+				// 找到最后一条AI回复
+				const lastAiMessageIndex = [...this.messageList].reverse()
+					.findIndex(msg => !msg.isSelf);
+				
+				if (lastAiMessageIndex !== -1) {
+					const actualIndex = this.messageList.length - 1 - lastAiMessageIndex;
+					// 标记为"重新生成中..."
+					const originalMessage = JSON.parse(JSON.stringify(this.messageList[actualIndex]));
+					
+					// 设置重新生成中的状态
+					this.$set(this.messageList[actualIndex].data[0].data, 'text', '重新生成中...');
+					
+					// 调用API重新生成
+					// 这里假设使用相同的发送API
+					const userMessageIndex = actualIndex - 1;
+					if (userMessageIndex >= 0 && this.messageList[userMessageIndex].isSelf) {
+						const userMessages = this.messageList[userMessageIndex].data;
+						
+						this.$api('sendPrivateMessage', {
+							messages: userMessages,
+							regen: true
+						}).then(response => {
+							// 更新AI响应
+							if (!response || response.code !== 200) {
+								this.$set(this.messageList[actualIndex].data[0].data, 'text', '抱歉，重新生成失败，请稍后再试。');
+							} else {
+								if (response.data && response.data.text) {
+									this.$set(this.messageList[actualIndex].data[0].data, 'text', response.data.text);
+								} else {
+									this.$set(this.messageList[actualIndex].data[0].data, 'text', originalMessage.data[0].data.text);
+								}
+							}
+							this.isGenerating = false;
+						}).catch(error => {
+							this.$set(this.messageList[actualIndex].data[0].data, 'text', '抱歉，重新生成时发生错误，请稍后再试。');
+							this.isGenerating = false;
+						});
+					} else {
+						setTimeout(() => {
+							this.$set(this.messageList[actualIndex].data[0].data, 'text', originalMessage.data[0].data.text + ' (重新生成)');
+							this.isGenerating = false;
+						}, 1500);
+					}
+				} else {
+					this.isGenerating = false;
+				}
+			},
+
+			clearChat() {
+				this.messageList = [];
+				this.canRegenerate = false;
+				// 可以在这里调用API清空服务器端对话历史
+				this.$api('clearConversation').then(res => {
+					uni.showToast({
+						title: '对话已清空',
+						icon: 'success'
+					});
+				}).catch(err => {
+					console.error('清空对话失败:', err);
+				});
+			},
+
+			showHelp() {
+				// 创建一个帮助消息
+				const helpMessage = {
+					id: Date.now(),
+					isSelf: false,
+					data: [{
+						type: 'text',
+						data: {
+							text: `**可用命令列表**\n\n` + 
+								`- **/clear**: 清空对话历史\n` +
+								`- **/regen**: 重新生成上一条回复\n` +
+								`- **/help**: 显示所有命令\n` +
+								`- **/mode**: 切换AI模式\n` +
+								`- **/image**: 生成图片模式\n` +
+								`- **/search**: 搜索相关信息\n` +
+								`- **/new**: 开始新对话`
+						}
+					}]
+				};
+				
+				this.messageList.push(helpMessage);
+				
+				// 滚动到底部
+				this.$nextTick(() => {
+					this.scrollToBottom();
+				});
+			},
+
+			startNewConversation() {
+				uni.showModal({
+					title: '新对话',
+					content: '开始新对话将清空当前会话，是否继续？',
+					success: res => {
+						if (res.confirm) {
+							this.clearChat();
+							// 可以在这里添加其他新对话初始化逻辑
+							uni.showToast({
+								title: '已开始新对话',
+								icon: 'success'
+							});
+						}
+					}
+				});
+			}
 		},
 	};
 </script>
@@ -279,7 +303,8 @@
 		display: flex;
 		flex-direction: column;
 		height: 100vh;
-		background-color: #f5f5f5;
+		background-color: #f9f9f9;
+		position: relative;
 	}
 
 	.chat-container {
@@ -287,105 +312,5 @@
 		padding: 20rpx;
 		overflow: hidden;
 		box-sizing: border-box;
-	}
-
-	
-
-	.chat-footer {
-		padding: 20rpx;
-		background-color: #f8f8f8;
-		border-top: 1rpx solid #e0e0e0;
-	}
-
-	.input-box {
-		display: flex;
-		align-items: center;
-		background-color: #ffffff;
-		border-radius: 10rpx;
-		padding: 10rpx 20rpx;
-
-		input {
-			flex: 1;
-			height: 70rpx;
-			font-size: 28rpx;
-		}
-
-		.action-buttons {
-			display: flex;
-			align-items: center;
-
-			.upload-btn {
-				padding: 5rpx 20rpx;
-			}
-
-			.more-btn {
-				background-color: #e8ecef;
-				color: #ffffff;
-				padding: 5rpx 20rpx;
-				border-radius: 8rpx;
-				margin-left: 10rpx;
-
-				text {
-					font-size: 40rpx;
-				}
-			}
-
-			.send-btn {
-				background-color: #22a6f1;
-				color: #ffffff;
-				padding: 10rpx 30rpx;
-				border-radius: 8rpx;
-				margin-left: 10rpx;
-
-				text {
-					font-size: 28rpx;
-				}
-			}
-		}
-	}
-
-	.bottom-menu {
-		position: fixed;
-		bottom: 55px;
-		left: 0;
-		right: 0;
-		background-color: #f6f5f5;
-		border-top: 1px solid #ede7e7;
-		padding: 10px;
-		display: flex;
-		/* 允许子元素换行排列 */
-		flex-wrap: wrap;
-	}
-
-	.menu-item {
-		display: flex;
-		flex-direction: row;
-		justify-content: center;
-		align-items: center;
-		width: 40px;
-		height: 40px;
-		margin: 30px 0px 10px 43px;
-		padding: 10px;
-		background-color: #fff;
-		border-radius: 20%;
-		cursor: pointer;
-	}
-
-	.up-item {
-		position: absolute;
-		left: 50%;
-		top: 10;
-		transform: translate(-10%);
-		width: 100px;
-		height: 100px;
-	}
-
-	.mask {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background-color: rgba(0, 0, 0, 0.5);
 	}
 </style>
